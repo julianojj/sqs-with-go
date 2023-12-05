@@ -38,7 +38,7 @@ func (s *Sqs) Publish(queueName string, data []byte) error {
 	return nil
 }
 
-func (s *Sqs) Consume(queueName string, callback func(args []byte)) error {
+func (s *Sqs) Consume(queueName string, callback func(args []byte) error) error {
 	for {
 		ouptut, err := s.client.ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl: aws.String(queueName),
@@ -48,11 +48,13 @@ func (s *Sqs) Consume(queueName string, callback func(args []byte)) error {
 		}
 		for _, msg := range ouptut.Messages {
 			body := []byte(*msg.Body)
-			callback(body)
-			s.client.DeleteMessage(&sqs.DeleteMessageInput{
-				QueueUrl:      aws.String(queueName),
-				ReceiptHandle: msg.ReceiptHandle,
-			})
+			err := callback(body)
+			if err == nil {
+				s.client.DeleteMessage(&sqs.DeleteMessageInput{
+					QueueUrl:      aws.String(queueName),
+					ReceiptHandle: msg.ReceiptHandle,
+				})
+			}
 		}
 	}
 }

@@ -35,21 +35,24 @@ func Worker(
 	jobs := []struct {
 		name string
 		url  string
-		fn   func(args []byte)
+		fn   func(args []byte) error
 	}{
 		{
 			name: "consumer-notify-user",
 			url:  os.Getenv("AWS_SQS_QUEUE_URL"),
-			fn: func(args []byte) {
+			fn: func(args []byte) error {
 				var input *usecases.NotifyCustomerInput
 				err := json.Unmarshal(args, &input)
 				if err != nil {
 					logger.Error(err.Error())
+					return err
 				}
 				err = notifyUser.Execute(input)
 				if err != nil {
 					logger.Error(err.Error())
+					return err
 				}
+				return nil
 			},
 		},
 	}
